@@ -8,14 +8,16 @@ module.exports = class WASMTreeSitterGrammar {
     const dirName = path.dirname(grammarPath)
     const qPath = path.join(dirName, params.treeSitter.syntaxQuery)
     this.syntaxQuery = fs.readFileSync(qPath, 'utf-8')
-    this._loadQueryIfExists(params,dirName, 'localsQuery')
-    this._loadQueryIfExists(params,dirName, 'foldsQuery')
+    this._loadQueryIfExists(params, dirName, 'localsQuery')
+    this._loadQueryIfExists(params, dirName, 'foldsQuery')
     this.grammarPath = path.join(dirName, params.treeSitter.grammar)
     this.contentRegex = buildRegex(params.contentRegex);
     this.firstLineRegex = buildRegex(params.firstLineRegex);
     this.fileTypes = params.fileTypes || [];
     this.registry = registry
     this.name = params.name
+    this._originalParams = params
+    this._originalDirName = dirName
   }
 
   _loadQueryIfExists(params, dirName, queryName) {
@@ -23,6 +25,15 @@ module.exports = class WASMTreeSitterGrammar {
       const p = path.join(dirName, params.treeSitter[queryName])
       this[queryName] = fs.readFileSync(p, 'utf-8')
     }
+  }
+
+  _reloadQueryFiles () {
+    let params = this._originalParams;
+    let dirName = this._originalDirName;
+    let qPath = path.join(dirName, params.treeSitter.syntaxQuery)
+    this.syntaxQuery = fs.readFileSync(qPath, 'utf-8')
+    this._loadQueryIfExists(params, dirName, 'localsQuery')
+    this._loadQueryIfExists(params, dirName, 'foldsQuery')
   }
 
   // TODO: Why is this here?
