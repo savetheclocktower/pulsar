@@ -1,3 +1,11 @@
+; NOTES:
+;
+; (#set! final "true") means that any later rule that matches this exact range
+; will be ignored.
+;
+; (#set! shy "true") means that this rule will be ignored if any previous rule
+; has marked this exact range, whether or not it was marked as final.
+
 
 (superclass
   (constant) @entity.name.type.class.ruby
@@ -9,37 +17,6 @@
   (constant) @entity.other.inherited-class.ruby
   (#set! final "true")
 )
-
-; Keywords
-[
-  "alias"
-  "and"
-  "begin"
-  "break"
-  "case"
-  "class"
-  "def"
-  "do"
-  "else"
-  "elsif"
-  "end"
-  "ensure"
-  "for"
-  "if"
-  "in"
-  "module"
-  "next"
-  "or"
-  "rescue"
-  "retry"
-  "return"
-  "then"
-  "unless"
-  "until"
-  "when"
-  "while"
-  "yield"
-] @keyword.control.ruby
 
 ; module [Foo]
 (module
@@ -70,15 +47,18 @@
   )
 )
 
-; FOO should be highlighted like a constant…
 (scope_resolution
-  scope: (constant) @constant.ruby (#match? @constant.ruby "^[A-Z\\d_]+$")
+  scope: (constant) @support.class.ruby
   (#set! final "true")
 )
 
-; … but `Foo` should be highlighted like a class or namespace.
 (scope_resolution
-  scope: (constant) @support.class.ruby (#not-match? @support.class.ruby "^[A-Z\\d_]+$")
+  "::" @keyword.operator.namespace.ruby
+  (#set! final "true")
+)
+
+(scope_resolution
+  name: (constant) @support.class.ruby
   (#set! final "true")
 )
 
@@ -91,40 +71,42 @@
 
 ; Highlight the interpolation inside of a string, plus the strings that delimit
 ; the interpolation.
-(interpolation
-  ; "#{" @punctuation.special.begin
-  ; "}" @punctuation.special.end
-) @meta.embedded
+(
+  (interpolation
+    "#{" @punctuation.section.embedded.begin.ruby
+    "}" @punctuation.section.embedded.end.ruby
+  ) @meta.embedded
+  (#set! final "true")
+)
 
 ; Function calls
 
-; TODO: The TM grammar this as `keyword.control.pseudo-method.ruby`; decide on
+; TODO: The TM grammar scopes this as `keyword.control.pseudo-method.ruby`; decide on
 ; the best name for it.
-((identifier) @function.method.builtin.ruby
- (#eq? @function.method.builtin.ruby "require"))
-
-"defined?" @function.method.builtin.ruby
-
-(call
-  method: [(identifier)] @support.function.kernel.ruby
-  (#match? @support.function.kernel.ruby "^(abort|at_exit|autoload|binding|callcc|caller|caller_locations|chomp|chop|eval|exec|exit|fork|format|gets|global_variables|gsub|lambda|load|local_variables|open|p|print|printf|proc|putc|puts|rand|readline|readlines|select|set_trace_func|sleep|spawn|sprintf|srand|sub|syscall|system|test|trace_var|trap|untrace_var|warn)$")
+(
+  (identifier) @function.method.builtin.ruby
+ (#eq? @function.method.builtin.ruby "require")
 )
 
-; Function definitions
+(unary
+  "defined?" @function.method.builtin.ruby
+)
+
+
 
 (class name: [(constant)]
   @entity.name.type.class.ruby
   (#set! final "true"))
 
-; TODO: In theory, the entire class body should be targetable with this scope,
-; but I can't get it to apply to an entire class body.
+; Scope the entire inside of a class body to `meta.class.ruby`; it's
+; semantically useful even though it probably won't get highlighted.
+(class) @meta.class.ruby
 
-;(class) @meta.class.ruby
-
-(alias (identifier) @function.method)
-(setter (identifier) @function.method)
-(method name: [(identifier) (constant)] @entity.name.function.ruby)
-(singleton_method name: [(identifier) (constant)] @function.method)
+(method
+  name: [(identifier) (constant)] @entity.name.function.ruby
+  (#set! final "true")
+)
+; (singleton_method name: [(identifier) (constant)] @function.method)
 
 ; Identifiers
 
@@ -147,8 +129,8 @@
   method: [(identifier) (constant)] @keyword.other.special-method (#match? @keyword.other.special-method "^(extend)$"))
 
 
-(call
-  method: [(identifier) (constant)] @function.method)
+; (call
+;   method: [(identifier) (constant)] @function.method)
 
 ; (call
 ;   method: (scope_resolution
@@ -167,45 +149,62 @@
 )
 
 
-(call
-  receiver: (constant) @constant.ruby (#match? @constant.ruby "^[A-Z\\d_]+$")
-)
+; (call
+;   receiver: (constant) @constant.ruby (#match? @constant.ruby "^[A-Z\\d_]+$")
+; )
 (call receiver: (constant)
- @support.class.ruby (#not-match? @support.class.ruby "^[A-Z\\d_]+$")
+ @support.class.ruby
+ (#set! final "true")
 )
 
 ((identifier) @constant.builtin.ruby
  (#match? @constant.builtin.ruby "^__(FILE|LINE|ENCODING)__$"))
 
+; Anything that hasn't been highlighted yet is probably a bare identifier. Mark
+; it as `constant` if it's all uppercase…
 ((constant) @constant.ruby
  (#match? @constant.ruby "^[A-Z\\d_]+$")
  (#set! final "true"))
 
-((constant) @variable.other.constant.ruby
- (#not-match? @variable.other.constant.ruby "^[A-Z\\d_]+$")
-)
+; …otherwise treat it as a variable.
+((constant) @variable.other.constant.ruby)
 
 (self) @variable.language.self.ruby
 (super) @keyword.control.pseudo-method.ruby
 
-(block_parameter (identifier) @variable.parameter)
-(block_parameters (identifier) @variable.parameter)
-(destructured_parameter (identifier) @variable.parameter)
-(hash_splat_parameter (identifier) @variable.parameter)
-(lambda_parameters (identifier) @variable.parameter)
-(method_parameters (identifier) @variable.parameter)
-(splat_parameter (identifier) @variable.parameter)
+(block_parameter (identifier) @variable.parameter.function.block.ruby)
+(block_parameters (identifier) @variable.parameter.function.block.ruby)
+(destructured_parameter (identifier) @variable.parameter.function.ruby)
+(hash_splat_parameter (identifier) @variable.parameter.function.splat.ruby)
+(lambda_parameters (identifier) @variable.parameter.function.lambda.ruby)
+(method_parameters (identifier) @variable.parameter.function.ruby)
+(splat_parameter (identifier) @variable.parameter.function.splat.ruby)
 
-(keyword_parameter name: (identifier) @constant.other.symbol.parameter.ruby)
-(optional_parameter name: (identifier) @variable.parameter)
+; TODO: We might want to combine the name and the colon so they can get
+; highlighted together as one scope. Pretty sure there's a way to do that.
 
-((identifier) @support.function.kernel.ruby
-  (#match? @support.function.kernel.ruby "^(abort|at_exit|autoload|binding|callcc|caller|caller_locations|chomp|chop|eval|exec|exit|fork|format|gets|global_variables|gsub|lambda|load|local_variables|open|p|print|printf|proc|putc|puts|rand|readline|readlines|select|set_trace_func|sleep|spawn|sprintf|srand|sub|syscall|system|test|trace_var|trap|untrace_var|warn)$"))
+; A keyword-style parameter when defining a method.
+(keyword_parameter
+  ":" @constant.other.symbol.parameter.ruby
+  (#set! final "true")
+)
 
+; A keyword-style argument when calling a method.
+(pair
+  key: (hash_key_symbol) @constant.other.symbol.hashkey.ruby
+  ":" @constant.other.symbol.hashkey.ruby
+  (#set! final "true")
+)
 
+(optional_parameter
+  name: (identifier) @variable.parameter.function.optional.ruby
+)
 
-((identifier) @function.method
- (#is-not? local))
+(
+  (identifier) @support.function.kernel.ruby
+  (#match? @support.function.kernel.ruby "^(abort|at_exit|autoload|binding|callcc|caller|caller_locations|chomp|chop|eval|exec|exit|fork|format|gets|global_variables|gsub|lambda|load|local_variables|open|p|print|printf|proc|putc|puts|rand|readline|readlines|select|set_trace_func|sleep|spawn|sprintf|srand|sub|syscall|system|test|trace_var|trap|untrace_var|warn)$")
+  (#set! final "true")
+)
 
 ;((constant) @constant.ruby
 ;  (#match? @constant.ruby "^[A-Z\\d_]+$"))
@@ -217,11 +216,14 @@
 ; TODO: I can't mark these as @string.quoted.double.ruby yet because the "s
 ; match _any_ delimiter, including single quotes and %Qs. This is probably a
 ; bug in tree-sitter-ruby.
-; (string
-;   "\"" @punctuation.definition.string.begin.ruby
-;   (string_content)
-;   "\"" @punctuation.definition.string.end.ruby
-; ) @string.quoted.ruby
+(
+  (string
+    "\"" @punctuation.definition.string.begin.ruby
+    (string_content)
+    "\"" @punctuation.definition.string.end.ruby
+  ) @string.quoted.ruby
+  (#set! final "true")
+)
 
 ; (will match empty strings)
 (string) @string.quoted.ruby
@@ -248,19 +250,26 @@
   (float)
 ] @constant.numeric.ruby
 
+(nil) @constant.language.nil.ruby
+
 [
-  (nil)
   (true)
   (false)
-] @constant.builtin
+] @constant.language.boolean.ruby
 
+; TODO: tree-sitter-ruby doesn't currently let us distinguish line comments
+; from block comments (the =begin/=end syntax). Until it does, the latter will
+; be scoped as `comment.line` and we just have to live with it — or invent a
+; way to hack around it in the language mode file once we can inspect the text
+; itself.
+;
+; Likewise, we can't grab the leading `#` and scope it as punctuation the way
+; the TM grammar does.
 (comment) @comment.line.number-sign.ruby
-
-; Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
 ; To distinguish them from the bitwise "|" operator.
 (block_parameters
-  "|" @punctuation
+  "|" @punctuation.separator.variable.ruby
 )
 
 (binary
@@ -278,6 +287,7 @@
 
 (conditional
   ["?" ":"] @keyword.operator.conditional.ruby
+  (#set! final "true")
 )
 
 
@@ -317,22 +327,48 @@
 [
   "=>"
   "->"
-] @keyword.operator
+] @keyword.operator.ruby
 
 [
   ","
   ";"
   "."
   ":"
-] @punctuation.separator
+] @punctuation.separator.ruby
 
-;[
-;  "("
-;  ")"
-;  "["
-;  "]"
-;  "{"
-;  "}"
-;  "%w("
-;  "%i("
-;] @punctuation.bracket
+; Keywords
+[
+  "alias"
+  "and"
+  "begin"
+  "break"
+  "case"
+  "class"
+  "def"
+  "do"
+  "else"
+  "elsif"
+  "end"
+  "ensure"
+  "for"
+  "if"
+  "in"
+  "module"
+  "next"
+  "or"
+  "rescue"
+  "retry"
+  "return"
+  "then"
+  "unless"
+  "until"
+  "when"
+  "while"
+  "yield"
+] @keyword.control.ruby
+
+; Any identifiers we haven't caught yet can be given a generic scope.
+((identifier) @function.method.ruby
+ (#is-not? local)
+ (#set! shy "true")
+)

@@ -46,7 +46,7 @@ class PositionIndex {
         startPosition: start,
         endPosition: end,
       },
-      setProperties: props
+      setProperties: props = {}
     } = syntax;
 
     let data = this.getDataForRange(syntax);
@@ -54,7 +54,14 @@ class PositionIndex {
       // A previous rule covering this exact range marked itself as "final." We
       // should not add an additional scope.
       return;
-    } else if (props) {
+    } else if (data && props.shy) {
+      // This node will only apply if we haven't yet marked this range with
+      // anything.
+      return;
+    } else {
+      // TODO: We may want to handle the case where more than one token will
+      // want to set data for a given range. Do we merge objects? Store each
+      // dataset separately?
       this.setDataForRange(syntax, props);
     }
 
@@ -65,7 +72,7 @@ class PositionIndex {
     this.set(end, id, 'close');
   }
 
-  set (point, item, which) {
+  set (point, id, which) {
     let key = this._normalizePoint(point)
     if (!this.order.includes(key)) {
       this.order.push(key);
@@ -82,11 +89,11 @@ class PositionIndex {
 
       // If an earlier token has already opened at this point, we want to open
       // after it.
-      bundle.push(item)
+      bundle.push(id)
     } else {
       // If an earlier token has already closed at this point, we want to close
       // before it.
-      bundle.unshift(item)
+      bundle.unshift(id)
     }
   }
 
