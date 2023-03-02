@@ -158,7 +158,7 @@ class WASMTreeSitterLanguageMode {
   // A hack to force an existing buffer to react to an update in the SCM file.
   _reloadSyntaxQuery () {
     // let _oldSyntaxQuery = this.syntaxQuery;
-    this.grammar.reloadQueryFiles()
+    this.grammar._reloadQueryFiles()
     let lang = this.parser.getLanguage()
     this.syntaxQuery = lang.query(this.grammar.syntaxQuery)
     // let range = this.buffer.getRange()
@@ -488,7 +488,6 @@ class WASMTreeSitterLanguageMode {
   // TODO: Doesn't work right; need to use `this.tree` instead of
   // `this.syntaxQuery`.
   syntaxTreeScopeDescriptorForPosition(point) {
-    const nodes = [];
     point = this.buffer.clipPosition(Point.fromObject(point));
 
     // If the position is the end of a line, get node of left character instead of newline
@@ -501,45 +500,49 @@ class WASMTreeSitterLanguageMode {
       point.column--;
     }
 
-    let captures = this.syntaxQuery.captures(this.tree.rootNode)
-    for (let cap of captures) {
-      let { node } = cap
-      let [startPoint, endPoint] = [
-        Point.fromObject(node.startPosition),
-        Point.fromObject(node.endPosition)
-      ]
+    let scopes = [];
 
-      let containsPoint = startPoint.isLessThanOrEqual(point) && endPoint.isGreaterThan(point)
-      if (containsPoint) {
-        nodes.push(cap)
+    let root = this.tree.rootNode;
+    let rangeIncludesPoint = (start, end, point) => {
+      return comparePoints(start, point) <= 0 && comparePoints(end, point) >= 0
+    };
+
+    let iterate = (node, isAnonymous = false) => {
+      let { startPosition: start, endPosition: end } = node;
+      if (rangeIncludesPoint(start, end, point)) {
+        scopes.push(isAnonymous ? `"${node.type}"` : node.type);
+        let namedChildrenIds = node.namedChildren.map(c => c.typeId);
+        for (let child of node.children) {
+          let isAnonymous = !namedChildrenIds.includes(child.typeId);
+          iterate(child, isAnonymous);
+        }
       }
-    }
+    };
 
-    // The nodes are mostly already sorted from smallest to largest,
-    // but for files with multiple syntax trees (e.g. ERB), each tree's
-    // nodes are separate. Sort the nodes from largest to smallest.
-    nodes.reverse();
-    nodes.sort(
-      (capA, capB) => {
-        let { node: a } = capA;
-        let { node: b } = capB;
-        return a.startIndex - b.startIndex || b.endIndex - a.endIndex
-      }
-    );
+    iterate(root);
 
-    const nodeTypes = nodes.map(node => node.name);
-    nodeTypes.unshift(this.grammar.scopeName);
-    return new ScopeDescriptor({ scopes: nodeTypes });
+    scopes.unshift(this.grammar.scopeName);
+    return new ScopeDescriptor({ scopes });
   }
 
   // TODO: When the cursor is at the very end of the line, before the newline,
   // it should include the scopes that ended on the left side of the cursor.
-  scopeDescriptorForPosition(position) {
+  scopeDescriptorForPosition (point) {
+    // If the position is the end of a line, get scope of left character instead of newline
+    // This is to match TextMate behaviour, see https://github.com/atom/atom/issues/18463
+    if (
+      point.column > 0 &&
+      point.column === this.buffer.lineLengthForRow(point.row)
+    ) {
+      point = point.copy();
+      point.column--;
+    }
+
     if (!this.tree) {
       return new ScopeDescriptor({scopes: ['text']})
     }
-    const current = Point.fromObject(position, true)
-    let begin = Point.fromObject(position, true)
+    const current = Point.fromObject(point, true)
+    let begin = Point.fromObject(point, true)
     begin.column = 0
 
     const end = Point.fromObject([begin.row + 1, 0])
