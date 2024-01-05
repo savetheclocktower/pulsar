@@ -3005,7 +3005,7 @@ class LanguageLayer {
 
     this.tree = null;
     this.lastSyntaxTree = null;
-    this.temporaryTrees = null;
+    this.temporaryTrees = [];
 
     while (trees.length > 0) {
       let tree = trees.pop();
@@ -4049,7 +4049,7 @@ class NodeRangeSet {
   }
 
   getRanges(buffer) {
-    const previousRanges = this.previous && this.previous.getRanges(buffer);
+    const previousRanges = this.previous?.getRanges(buffer);
     let result = [];
 
     for (const node of this.nodes) {
@@ -4192,7 +4192,7 @@ class NodeRangeSet {
   // For injection points with `newlinesBetween` enabled, ensure that a
   // newline is included between each disjoint range.
   _ensureNewline(buffer, newRanges, startIndex, startPosition) {
-    const lastRange = newRanges[newRanges.length - 1];
+    const lastRange = last(newRanges);
     if (lastRange && lastRange.endPosition.row < startPosition.row) {
       newRanges.push({
         startPosition: new Point(
@@ -4289,7 +4289,7 @@ class RangeList {
   }
 
   insertOrdered(newRange) {
-    let index = this.ranges.findIndex((r, i) => {
+    let index = this.ranges.findIndex(r => {
       return r.start.compare(newRange.start) > 0;
     });
     this.ranges.splice(index, 0, newRange);
