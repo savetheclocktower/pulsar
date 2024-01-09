@@ -302,12 +302,12 @@ describe('ScopeResolver', () => {
 
   describe('tests', () => {
 
-    it('rejects scopes for ranges that have already been claimed by another capture with (#set! capture.final true)', async () => {
+    it('rejects scopes for ranges that have already been claimed by another capture with (#set! capture.final)', async () => {
       await grammar.setQueryForTest('highlightsQuery', `
         (comment) @comment
         (string) @string0
         ((string) @string1
-          (#set! capture.final true))
+          (#set! capture.final))
 
         (string) @string2
         "=" @operator
@@ -324,7 +324,7 @@ describe('ScopeResolver', () => {
       let { scopeResolver, captures } = await getAllCaptures(grammar, languageMode);
 
       for (let capture of captures) {
-        let { node, name } = capture;
+        let { name } = capture;
         let result = scopeResolver.store(capture);
         if (name === 'string0') {
           expect(!!result).toBe(true);
@@ -374,12 +374,12 @@ describe('ScopeResolver', () => {
       }
     });
 
-    it('rejects scopes for ranges that have already been claimed by another capture with (#set! capture.final true)', async () => {
+    it('rejects scopes for ranges that have already been claimed by another capture with (#set! capture.final)', async () => {
       await grammar.setQueryForTest('highlightsQuery', `
         (comment) @comment
         (string) @string0
         ((string) @string1
-        (#set! capture.final true))
+        (#set! capture.final))
 
         (string) @string2
         "=" @operator
