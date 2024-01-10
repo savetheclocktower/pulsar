@@ -35,24 +35,23 @@ describe("Tree-sitter PHP grammar", () => {
       expect(editor).toHaveScopes([1, 0], '$', ["variable.other.php", "punctuation.definition.variable.php"]);
       expect(editor).toHaveScopes([1, 5], ' ', []);
       expect(editor).toHaveScopes([1, 6], '=', ["keyword.operator.assignment.php"]);
-      expect(editor).toHaveScopes([1, 8], '1', ["constant.numeric.decimal.php"]);
-      expect(editor).toHaveScopes([1, 9], ';', ["punctuation.terminator.expression.php"]);
+      expect(editor).toHaveScopes([1, 8], '1', ["constant.numeric.decimal.integer.php"]);
     });
 
     it("scopes +", async () => {
       await editor.setPhpText('1 + 2;');
 
-      expect(editor).toHaveScopes([1, 0], '1', ["constant.numeric.decimal.php"]);
+      expect(editor).toHaveScopes([1, 0], '1', ["constant.numeric.decimal.integer.php"]);
       expect(editor).toHaveScopes([1, 2], '+', ["keyword.operator.arithmetic.php"]);
-      expect(editor).toHaveScopes([1, 4], '2', ["constant.numeric.decimal.php"]);
+      expect(editor).toHaveScopes([1, 4], '2', ["constant.numeric.decimal.integer.php"]);
     });
 
     it("scopes %", async () => {
       await editor.setPhpText('1 % 2;');
 
-      expect(editor).toHaveScopes([1, 0], '1', ["constant.numeric.decimal.php"]);
+      expect(editor).toHaveScopes([1, 0], '1', ["constant.numeric.decimal.integer.php"]);
       expect(editor).toHaveScopes([1, 2], '%', ["keyword.operator.arithmetic.php"]);
-      expect(editor).toHaveScopes([1, 4], '2', ["constant.numeric.decimal.php"]);
+      expect(editor).toHaveScopes([1, 4], '2', ["constant.numeric.decimal.integer.php"]);
     });
 
     it("scopes instanceof", async () => {
@@ -61,7 +60,7 @@ describe("Tree-sitter PHP grammar", () => {
       expect(editor).toHaveScopes([1, 0],  '$',          ["variable.other.php", "punctuation.definition.variable.php"]);
       expect(editor).toHaveScopes([1, 1],  'x',          ["variable.other.php"]);
       expect(editor).toHaveScopes([1, 3],  'instanceof', ["keyword.operator.type.php"]);
-      expect(editor).toHaveScopes([1, 14], 'Foo',        ["support.class.php"]);
+      expect(editor).toHaveScopes([1, 14], 'Foo',        ["support.other.function.constructor.php"]);
     });
 
     describe("combined operators", () => {
@@ -74,18 +73,18 @@ describe("Tree-sitter PHP grammar", () => {
       it("scopes +=", async () => {
         await editor.setPhpText('$test += 2;');
 
-        expect(editor).toHaveScopes([1, 6], ["keyword.operator.assignment.php"]);
+        expect(editor).toHaveScopes([1, 6], ["keyword.operator.assignment.compound.php"]);
       });
 
       it("scopes ??=", async () => {
         await editor.setPhpText('$test ??= true;');
 
-        expect(editor).toHaveScopes([1, 6], ["keyword.operator.assignment.php"]);
+        expect(editor).toHaveScopes([1, 6], ["keyword.operator.assignment.compound.php"]);
       });
     });
   });
 
-  it("should tokenize $this", async () => {
+  it("scopes $this", async () => {
     await editor.setPhpText("$this;");
 
     expect(editor).toHaveScopes([1, 0], '$',    ["variable.language.builtin.this.php", "punctuation.definition.variable.php"]);
@@ -101,19 +100,17 @@ describe("Tree-sitter PHP grammar", () => {
     it("scopes basic use statements", async () => {
       await editor.setPhpText("use Foo;");
 
-      expect(editor).toHaveScopes([1, 0], 'use', ["keyword.other.use.php"]);
-      expect(editor).toHaveScopes([1, 4], 'Foo', ["support.class.php"]);
-      expect(editor).toHaveScopes([1, 7], ';',   ["punctuation.terminator.expression.php"]);
+      expect(editor).toHaveScopes([1, 0], 'use', ["keyword.control.use.php"]);
+      expect(editor).toHaveScopes([1, 4], 'Foo', ["entity.name.type.namespace.php"]);
 
       await editor.setPhpText("use My\\Full\\NSname;");
 
-      expect(editor).toHaveScopes([1, 0], 'use', ["keyword.other.use.php"]);
-      expect(editor).toHaveScopes([1, 4], 'My', ["support.other.namespace.php"]);
-      expect(editor).toHaveScopes([1, 6], '\\', ["support.other.namespace.php", "punctuation.separator.inheritance.php"]);
-      expect(editor).toHaveScopes([1, 7], 'Full', ["support.other.namespace.php"]);
-      expect(editor).toHaveScopes([1, 11], '\\', ["support.other.namespace.php","punctuation.separator.inheritance.php"]);
-      expect(editor).toHaveScopes([1, 12], 'NSname', ["support.class.php"]);
-      expect(editor).toHaveScopes([1, 18], ';', ["punctuation.terminator.expression.php"]);
+      expect(editor).toHaveScopes([1, 0], 'use', ["keyword.control.use.php"]);
+      expect(editor).toHaveScopes([1, 4], 'My', ["entity.name.type.namespace.php"]);
+      expect(editor).toHaveScopes([1, 6], '\\', ["punctuation.operator.namespace.php"]);
+      expect(editor).toHaveScopes([1, 7], 'Full', ["entity.name.type.namespace.php"]);
+      expect(editor).toHaveScopes([1, 11], '\\', ["punctuation.operator.namespace.php"]);
+      expect(editor).toHaveScopes([1, 12], 'NSname', ["entity.name.type.namespace.php"]);
     });
   });
 
@@ -130,22 +127,21 @@ describe("Tree-sitter PHP grammar", () => {
     it("scopes class instantiation", async () => {
       await editor.setPhpText("$a = new ClassName();");
 
-      expect(editor).toHaveScopes([1, 5], 'new',       ["keyword.other.new.php"]);
-      expect(editor).toHaveScopes([1, 9], 'ClassName', ["support.class.php"]);
+      expect(editor).toHaveScopes([1, 5], 'new',       ["keyword.control.new.php"]);
+      expect(editor).toHaveScopes([1, 9], 'ClassName', ["support.other.function.constructor.php"]);
       expect(editor).toHaveScopes([1, 18], '(',        ["punctuation.definition.begin.bracket.round.php"]);
       expect(editor).toHaveScopes([1, 19], ')',        ["punctuation.definition.end.bracket.round.php"]);
-      expect(editor).toHaveScopes([1, 20], ';',        ["punctuation.terminator.expression.php"]);
     });
 
     it("scopes class modifiers", async () => {
       await editor.setPhpText("abstract class Test {}");
 
-      expect(editor).toHaveScopes([1, 0], 'abstract', ["storage.modifier.abstract.php"]);
+      expect(editor).toHaveScopes([1, 0], 'abstract', ["keyword.control.abstract.php"]);
       expect(editor).toHaveScopes([1, 9], 'class', ["storage.type.class.php"]);
 
       await editor.setPhpText("final class Test {}");
 
-      expect(editor).toHaveScopes([1, 0], 'final', ["storage.modifier.final.php"]);
+      expect(editor).toHaveScopes([1, 0], 'final', ["keyword.control.final.php"]);
       expect(editor).toHaveScopes([1, 6], 'class', ["storage.type.class.php"]);
     });
   });
