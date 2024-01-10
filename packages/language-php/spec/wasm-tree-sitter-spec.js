@@ -28,6 +28,27 @@ describe("Tree-sitter PHP grammar", () => {
     })
   });
 
+  describe('php tags', () => {
+    it('scopes regular opening tags', async () => {
+        await editor.setPhpText('');
+
+        expect(editor).toHaveScopes([0, 0], '<?php', ['punctuation.section.embedded.begin.php']);
+    })
+
+    it('scopes short opening tags', async () => {
+        editor.setText('<?= ?>');
+        await editor.languageMode.ready;
+
+        expect(editor).toHaveScopes([0, 0], '<?=', ['punctuation.section.embedded.begin.php']);
+    })
+
+    it('scopes closing tags', async () => {
+        await editor.setPhpText('?>');
+
+        expect(editor).toHaveScopes([1, 0], '?>', ['punctuation.section.embedded.end.php']);
+    })
+  });
+
   describe("operators", () => {
     it("scopes =", async () => {
       await editor.setPhpText('$test = 1;');
@@ -144,6 +165,21 @@ describe("Tree-sitter PHP grammar", () => {
       expect(editor).toHaveScopes([1, 0], 'final', ["keyword.control.final.php"]);
       expect(editor).toHaveScopes([1, 6], 'class', ["storage.type.class.php"]);
     });
+
+    describe('properties', () => {
+      it('scopes readonly properties', async () => {
+        await editor.setPhpText(`
+          class Test {
+            public readonly int $a;
+          }`)
+
+          expect(editor).toHaveScopes([1, 0], 'class',    ['storage.type.TYPE.php'])
+          expect(editor).toHaveScopes([2, 2], 'public',   ['storage.modifier.public.php'])
+          expect(editor).toHaveScopes([2, 9], 'readonly', ['storage.modifier.readonly.php'])
+          expect(editor).toHaveScopes([2, 18], 'int',     ['storage.type.builtin.php'])
+        })
+
+    })
   });
 
   describe("phpdoc", () => {
