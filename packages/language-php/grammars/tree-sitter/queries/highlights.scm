@@ -303,9 +303,9 @@
       "$" @punctuation.definition.variable.php
     ) @variable.parameter.php))
 
-; The "$bar" in `$foo->$bar`.
+; The "bar" and "$bar" in `$foo->bar` and `$foo->$bar`.
 (member_access_expression
-  name: (variable_name) @variable.other.property.php
+  name: [(name) (variable_name)] @variable.other.property.php
   (#set! capture.final true))
 
 ((variable_name
