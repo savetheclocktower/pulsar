@@ -354,7 +354,6 @@
 
 
 [
-  "abstract"
   "as"
   "break"
   "case"
@@ -393,6 +392,7 @@
 ] @keyword.control._TYPE_.php
 
 [
+  "abstract"
   "final"
   "private"
   "protected"
