@@ -245,6 +245,17 @@
 (class_declaration (base_clause (name) @entity.other.inherited-class.php))
 (class_declaration (class_interface_clause (name) @entity.other.implemented-interface.php))
 
+; usage or consumption of traits
+(use_declaration (name) @entity.name.type.trait.php)
+; in use lists, "bar" in `Foo::bar` is a method, not a constant
+(use_list
+  (_
+    (class_constant_access_expression (name) @support.other.function.method.php .)
+    (name) @support.other.function.method.php
+  )
+  (#set! capture.final true)
+)
+
 ; the "Foo" and "bar" in `Foo::bar`
 (class_constant_access_expression . (name) @support.class.php)
 (class_constant_access_expression (name) @variable.other.property.php .)
