@@ -261,6 +261,11 @@
 
 (trait_declaration (name) @entity.name.type.trait.php)
 
+; INTERFACES
+; ======
+
+(interface_declaration (name) @entity.name.type.interface.php)
+
 
 ; TYPES
 ; =====
@@ -272,7 +277,7 @@
 
 "global" @storage.modifier.global.php
 
-["trait" "class"] @storage.type._TYPE_.php
+["interface" "trait" "class"] @storage.type._TYPE_.php
 "function" @storage.type.function.php
 "fn" @storage.type.function.arrow.php
 
@@ -375,7 +380,6 @@
   "include_once"
   "include"
   "insteadof"
-  "interface"
   "namespace"
   "new"
   "require_once"
