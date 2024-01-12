@@ -245,6 +245,16 @@
 (class_declaration (base_clause (name) @entity.other.inherited-class.php))
 (class_declaration (class_interface_clause (name) @entity.other.implemented-interface.php))
 
+; the "Foo" and "bar" in `Foo::bar`
+(class_constant_access_expression . (name) @support.class.php)
+(class_constant_access_expression (name) @variable.other.property.php .)
+
+; the "Foo" and "$bar" in Foo::$bar
+(scoped_property_access_expression
+  scope: (name) @support.class.php
+  name: (variable_name) @variable.other.property.static.php
+  (#set! capture.final true))
+
 ; Static method calls.
 (scoped_call_expression
   scope: (name) @support.class.php
