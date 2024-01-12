@@ -515,7 +515,15 @@
   "-="
   "*="
   "/="
+  "%="
+  "**="
+  "&="
+  "|="
+  "^="
+  "<<="
+  ">>="
   ".="
+  "??="
 ] @keyword.operator.assignment.compound.php
 
 "->" @keyword.operator.class.php
