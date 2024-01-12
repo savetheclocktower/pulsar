@@ -247,13 +247,11 @@
 
 ; Static method calls.
 (scoped_call_expression
+  scope: (name) @support.class.php
   name: (name) @support.other.function.method.static.php)
 
 (member_call_expression
   name: (name) @support.other.function.method.php)
-
-(scoped_call_expression
-  scope: (name) @support.class.php)
 
 
 ; TRAITS
