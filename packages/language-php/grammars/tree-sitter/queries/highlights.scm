@@ -285,6 +285,14 @@
 
 (interface_declaration (name) @entity.name.type.interface.php)
 
+; ENUMS
+; =====
+
+(enum_declaration
+  name: (name) @entity.name.type.enum.php
+  (enum_declaration_list
+    (enum_case
+      name: (name) @constant.other.enum.php)))
 
 ; TYPES
 ; =====
@@ -296,7 +304,7 @@
 
 "global" @storage.modifier.global.php
 
-["interface" "trait" "class"] @storage.type._TYPE_.php
+["enum" "interface" "trait" "class"] @storage.type._TYPE_.php
 "function" @storage.type.function.php
 "fn" @storage.type.function.arrow.php
 
